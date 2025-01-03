@@ -1,33 +1,39 @@
-import React, {useEffect, useRef} from "react";
-import {Stage, Layer, Text} from "react-konva";
+import React, { useEffect, useRef, useState } from "react";
+import CanvasArea from "./CanvasArea";
+import TopToolBar from "./TopToolBar";
+import ToolSelection from "./ToolSelection";
+import BottomToolBar from "./BottomToolBar";
 import io from "socket.io-client";
 
 const CanvasPage = () => {
-    const width = window.innerWidth * 0.8;
-    const height = window.innerHeight * 0.8;
-    
-    return (
+    const socketRef = useRef(null);
+    const [lines, setLines] = useState([]);
+    const [tool, setTool] = useState('pen');
+    const [color, setColor] = useState('#df4b26');
+    const [strokeWidth, setStrokeWidth] = useState(5);
 
-            // <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
-            //     <h1 className="text-2xl font-bold mb-4">Scribble here</h1>
-            // </div>
+    useEffect(() => {
+        socketRef.current = io('http://localhost:8080');
+        socketRef.current.emit('joinRoom', 'room1');
+        socketRef.current.on('draw', (data) => {
+        setLines((prevLines) => [...prevLines, data]);
+        });
         
-            <Stage width={width} height={height} style={{ border: '2px solid #ccc' }}>
-                <Layer >
-                    <Text
-                        text="Here is the canvas"
-                        x={10} // Position on the canvas
-                        y={10}
-                        fontSize={24}
-                        fill="black" // Text color
-                    />
-                </Layer>
-            </Stage>
+        return () => {
+        socketRef.current.disconnect();
+        };
+    }, []);
 
-        
-        
-    )
-}
+        return (
+            <div className="relative flex flex-col h-screen bg-stone-900 text-white">
+                <TopToolBar roomName={'room1'}/>
+                <div className="relative flex-1">
+                    <CanvasArea lines={lines} setLines={setLines} tool={tool} color={color} strokeWidth={strokeWidth} socketRef={socketRef}/>
+                    <ToolSelection tool={tool} setTool={setTool}/>
+                </div>
+                <BottomToolBar color={color} setColor={setColor} strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth} />
+            </div>
+    );
+};
 
 export default CanvasPage;
-
