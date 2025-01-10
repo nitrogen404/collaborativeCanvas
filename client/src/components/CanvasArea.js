@@ -1,5 +1,5 @@
 import React, {useRef} from "react";
-import { Stage, Layer, Text, Line } from "react-konva";
+import { Stage, Layer, Line } from "react-konva";
 
 const CanvasArea = ({lines, setLines, tool, color, strokeWidth, socketRef}) => {
     const isDrawing = useRef(false);
@@ -30,7 +30,7 @@ const CanvasArea = ({lines, setLines, tool, color, strokeWidth, socketRef}) => {
         <div className="absolute inset-0 bg-stone-900">
             <Stage 
                     width={window.innerWidth} 
-                    height={window.innerHeight - 100} 
+                    height={window.innerHeight} 
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}

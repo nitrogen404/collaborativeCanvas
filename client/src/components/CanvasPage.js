@@ -9,8 +9,9 @@ const CanvasPage = () => {
     const socketRef = useRef(null);
     const [lines, setLines] = useState([]);
     const [tool, setTool] = useState('pen');
-    const [color, setColor] = useState('#df4b26');
+    const [color, setColor] = useState('#FFFFFF');
     const [strokeWidth, setStrokeWidth] = useState(5);
+    const [eraserSize, setEraserSize] = useState(10);
 
     useEffect(() => {
         socketRef.current = io('http://localhost:8080');
@@ -24,15 +25,20 @@ const CanvasPage = () => {
         };
     }, []);
 
-        return (
-            <div className="relative flex flex-col h-screen bg-stone-900 text-white">
-                <TopToolBar roomName={'room1'}/>
-                <div className="relative flex-1">
-                    <CanvasArea lines={lines} setLines={setLines} tool={tool} color={color} strokeWidth={strokeWidth} socketRef={socketRef}/>
-                    <ToolSelection tool={tool} setTool={setTool}/>
-                </div>
-                <BottomToolBar color={color} setColor={setColor} strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth} />
+    const clearCanvas = () => {
+        setLines([]);
+        socketRef.current.emit('clearCanvas', 'room1');
+    }
+
+    return (
+        <div className="relative flex flex-col h-screen bg-stone-900 text-white">
+            <TopToolBar roomName={'room1'}/>
+            <div className="relative flex-1">
+                <CanvasArea lines={lines} setLines={setLines} tool={tool} color={color} strokeWidth={strokeWidth} socketRef={socketRef} eraserSize={eraserSize} />
+                <ToolSelection tool={tool} setTool={setTool} clearCanvas={clearCanvas}/>
             </div>
+            <BottomToolBar color={color} setColor={setColor} strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth} eraserSize={eraserSize} setEraserSize={setEraserSize} tool={tool}/>
+        </div>
     );
 };
 
