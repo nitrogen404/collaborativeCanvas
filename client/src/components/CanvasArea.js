@@ -1,22 +1,30 @@
 import React, {useRef} from "react";
-import { Stage, Layer, Line } from "react-konva";
+import { Stage, Layer, Line, Circle, Text} from "react-konva";
 
-const CanvasArea = ({lines, setLines, tool, color, strokeWidth, socketRef}) => {
+const CanvasArea = ({lines, setLines, tool, color, strokeWidth, eraserSize, userCursors, socketRef}) => {
     const isDrawing = useRef(false);
     
     const handleMouseDown = (e) => {
         isDrawing.current = true;
         const pos = e.target.getStage().getPointerPosition();
-        setLines([...lines, { tool, color, strokeWidth, points: [pos.x, pos.y] }]);
-      };
+        setLines([...lines, { tool, 
+                            color: tool === "eraser" ? "black" :  color,
+                            strokeWidth: tool === "eraser" ? eraserSize : strokeWidth, 
+                            points: [pos.x, pos.y] 
+                        }
+                ]);
+    };
     
     const handleMouseMove = (e) => {
         if (!isDrawing.current) return;
         
         const stage = e.target.getStage();
         const point = stage.getPointerPosition();
+        socketRef.current.emit('cursorMove', point);
+
         let lastLine = {...lines[lines.length - 1]};
         lastLine.points = [...lastLine.points.concat([point.x, point.y])];
+        
         const updatedLines = [...lines.slice(0, -1), lastLine];
         setLines(updatedLines);
         socketRef.current.emit('draw', lastLine, 'room1');
@@ -44,7 +52,7 @@ const CanvasArea = ({lines, setLines, tool, color, strokeWidth, socketRef}) => {
                             <Line
                                 key={i}
                                 points={line.points}
-                                stroke={line.color}
+                                stroke={line.tool === "eraser" ? "black" : line.color}
                                 strokeWidth={line.strokeWidth}
                                 tension={0.5}
                                 lineCap="round"
@@ -54,6 +62,25 @@ const CanvasArea = ({lines, setLines, tool, color, strokeWidth, socketRef}) => {
                                 }
                             />
                         ))}
+
+                        {Object.entries(userCursors).map(([id, { position, user }]) => (
+                            <React.Fragment key={id}>
+                                <Circle
+                                    x={position.x}
+                                    y={position.y}
+                                    radius={5}
+                                    fill="blue"
+                                />
+                                <Text
+                                    x={position.x + 10}
+                                    y={position.y}
+                                    text={user}
+                                    fontSize={12}
+                                    fill="white"
+                                />
+                            </React.Fragment>
+                        ))}
+
                     </Layer>
                 </Stage>
         </div>

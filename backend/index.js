@@ -32,6 +32,7 @@ app.post("/google-login", async(req, res) => {
         })
 
         const payload = ticket.getPayload();
+        console.log("Payload, ", payload);
         const userId = payload['sub'];
 
         let user = users.find((user) => user.googleId === userId);
@@ -45,6 +46,8 @@ app.post("/google-login", async(req, res) => {
         }
         const sessionToken = jwt.sign({ userId }, secret, { expiresIn: '1h' });
         res.status(200).json({ sessionToken, message: 'User authenticated successfully'});
+        console.log("User datax ", user);
+
     } catch (error) {
         console.error('Error during Google token verification:', error);
         res.status(403).json({ message: 'Invalid Google token' });
@@ -53,17 +56,61 @@ app.post("/google-login", async(req, res) => {
 
 io.on('connection', (socket)=> {
     console.log('A user connected', socket.id);
-    socket.on('joinRoom', (roomId) => {
+    const usersinRoom = {};
+
+    socket.on('joinRoom', (roomId, userData) => {
         socket.join(roomId);
+        usersinRoom[socket.id] = {roomId, 
+                                    ...userData, 
+                                    point: {
+                                        x: userData.point.x, 
+                                        y: userData.point.y
+                                    }
+        }
+        
+        const otherUsers = Object.keys(usersinRoom)
+                .filter(id => id !== socket.id && usersinRoom[id].roomId === roomId)
+                .map(id => ({id, user: usersinRoom[id], point: usersinRoom[id].point}));
+        
+        socket.emit('existingCursors', otherUsers);
+        io.to(roomId).emit('updateCursor', {
+            id: socket.id, 
+            point: usersinRoom[socket.id].point, 
+            user: userData
+        })
         console.log(`${socket.id} joined ${roomId}`);
+    })
+
+    socket.on('cursorMove', (point) => {
+        const user = usersinRoom[socket.id];
+        if (user) {
+            user.point = point
+            const {roomId} = user;
+            socket.to(roomId).emit('updateCursor', 
+                {   id: socket.id, 
+                    point, 
+                    user: user, 
+                }
+            )
+        }
     })
 
     socket.on('draw', (data, roomId) => {
         socket.to(roomId).emit("draw", data);
     });
 
+    socket.on('clearCanvas', (roomId) => {
+        io.to(roomId).emit('clearCanvas')
+    })
+
     socket.on('disconnect', () => {
-        console.log('A user disconnected');
+        const user = usersinRoom[socket.id];
+        if (user) {
+            const {roomId} = user;
+            socket.to(roomId).emit('removeCursor', socket.id);
+            delete usersinRoom[socket.id];
+        }
+        console.log(`${socket.id} has disconned ${roomId}`);
     });
 
 })
