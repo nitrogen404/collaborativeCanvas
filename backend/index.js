@@ -107,13 +107,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        const user = usersinRoom[socket.id];
-        if (user) {
-            const { roomId } = user;
-            socket.to(roomId).emit('removeCursor', socket.id);
-            delete usersinRoom[socket.id];
+        if (usersinRoom[socket.id]) {
+            const { roomId } = usersinRoom[socket.id]; 
+            delete usersinRoom[socket.id]; 
+            io.to(roomId).emit('removeCursor', socket.id); 
+            console.log(`${socket.id} disconnected from ${roomId}`);
+        } else {
+            console.log(`${socket.id} disconnected, but no roomId was found.`);
         }
-        console.log(`${socket.id} disconnected from ${roomId}`);
     });
 });
 

@@ -3,6 +3,7 @@ import { Stage, Layer, Line, Circle, Text } from "react-konva";
 
 const CanvasArea = ({ lines, setLines, tool, color, strokeWidth, eraserSize, userCursors, socketRef }) => {
     const isDrawing = useRef(false);
+    console.log('User Cursors:', JSON.stringify(userCursors, null, 2));
 
     const handleMouseDown = (e) => {
         isDrawing.current = true;
@@ -58,12 +59,29 @@ const CanvasArea = ({ lines, setLines, tool, color, strokeWidth, eraserSize, use
                         />
                     ))}
 
-                    {Object.entries(userCursors).map(([id, { position, user }]) => (
-                        <React.Fragment key={id}>
-                            <Circle x={position.x} y={position.y} radius={5} fill="blue" />
-                            <Text x={position.x + 10} y={position.y} text={user} fontSize={12} fill="white" />
-                        </React.Fragment>
-                    ))}
+                    {Object.entries(userCursors).map(([id, cursorData]) => {
+                        if (!cursorData || !cursorData.point) return null; // Safety check
+                        const { point, user } = cursorData;
+
+                        return (
+                            <React.Fragment key={id}>
+                                <Circle
+                                    x={point.x}
+                                    y={point.y}
+                                    radius={5}
+                                    fill="blue"
+                                />
+                                <Text
+                                    x={point.x + 10}
+                                    y={point.y}
+                                    text={user}
+                                    fontSize={12}
+                                    fill="white"
+                                />
+                            </React.Fragment>
+                        );
+                    })}
+
                 </Layer>
             </Stage>
         </div>
